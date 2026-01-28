@@ -105,6 +105,15 @@ def generate_html():
             align-items: center;
             padding: 10px 0;
             border-bottom: 1px solid #222;
+            transition: all 0.2s;
+        }}
+        .stats-item:hover {{
+            background: #1a1a1a;
+            border-radius: 6px;
+            padding-left: 8px;
+            margin-left: -8px;
+            padding-right: 8px;
+            margin-right: -8px;
         }}
         .stats-item:last-child {{ border-bottom: none; }}
         .stats-asset {{
@@ -188,6 +197,7 @@ def generate_html():
         let currentPeriod = 'YTD';
         let chart = null;
         let hiddenAssets = new Set();
+        let selectedAsset = null;
         
         // 티커에서 표시용 이름 추출 (EURUSD=X -> EURUSD)
         function getDisplaySymbol(ticker) {{
@@ -231,16 +241,32 @@ def generate_html():
                 
                 const percentData = calculatePercentChange(data.prices, startDate);
                 if (percentData.length > 0) {{
+                    // 선택 상태에 따른 스타일 결정
+                    let borderWidth = 2;
+                    let borderColor = data.color;
+                    
+                    if (selectedAsset) {{
+                        if (symbol === selectedAsset) {{
+                            borderWidth = 4;
+                            borderColor = data.color;
+                        }} else {{
+                            borderWidth = 1;
+                            borderColor = data.color + '50'; // 30% opacity
+                        }}
+                    }}
+                    
                     datasets.push({{
                         label: getDisplaySymbol(symbol),
                         data: percentData,
-                        borderColor: data.color,
+                        borderColor: borderColor,
                         backgroundColor: data.color + '20',
-                        borderWidth: 2,
+                        borderWidth: borderWidth,
                         pointRadius: 0,
                         pointHoverRadius: 4,
                         tension: 0.1,
-                        fill: false
+                        fill: false,
+                        originalColor: data.color,
+                        symbol: symbol
                     }});
                 }}
             }});
@@ -382,10 +408,20 @@ def generate_html():
             list.innerHTML = sorted.map(asset => {{
                 const perfClass = asset.perf >= 0 ? 'positive' : 'negative';
                 const perfSign = asset.perf >= 0 ? '+' : '';
-                const opacity = hiddenAssets.has(asset.symbol) ? '0.3' : '1';
+                const isHidden = hiddenAssets.has(asset.symbol);
+                const isSelected = selectedAsset === asset.symbol;
+                
+                let opacity = '1';
+                if (isHidden) {{
+                    opacity = '0.3';
+                }} else if (selectedAsset && !isSelected) {{
+                    opacity = '0.4';
+                }}
+                
+                const selectedStyle = isSelected ? 'background: #1f2937; border-radius: 6px; padding-left: 8px; margin-left: -8px; padding-right: 8px; margin-right: -8px;' : '';
                 
                 return `
-                    <li class="stats-item" style="opacity: ${{opacity}}">
+                    <li class="stats-item" data-symbol="${{asset.symbol}}" style="opacity: ${{opacity}}; cursor: pointer; ${{selectedStyle}}">
                         <div class="stats-asset">
                             <div class="stats-dot" style="background: ${{asset.color}}"></div>
                             <span class="stats-name">${{asset.displaySymbol}} <span class="stats-symbol">(${{asset.name}})</span></span>
@@ -394,6 +430,20 @@ def generate_html():
                     </li>
                 `;
             }}).join('');
+            
+            // Stats 아이템 클릭 이벤트
+            list.querySelectorAll('.stats-item').forEach(item => {{
+                item.addEventListener('click', () => {{
+                    const symbol = item.dataset.symbol;
+                    if (selectedAsset === symbol) {{
+                        selectedAsset = null; // 같은 거 클릭하면 해제
+                    }} else {{
+                        selectedAsset = symbol; // 새로운 거 선택
+                    }}
+                    updateChart();
+                    updateStats();
+                }});
+            }});
         }}
         
         // 범례 생성
