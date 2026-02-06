@@ -9,7 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { 
+        html, body { 
+            height: 100%;
+            overflow: hidden;
             -webkit-text-size-adjust: 100%;
             -ms-text-size-adjust: 100%;
         }
@@ -17,20 +19,26 @@
             font-family: 'Inter', -apple-system, sans-serif; 
             background: #000; 
             color: #fff;
-            min-height: 100vh;
             padding: 16px;
-            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
         }
-        .container { max-width: 1400px; margin: 0 auto; width: 100%; }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
         
         .header { 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
+            flex-shrink: 0;
         }
         .title { font-size: 20px; font-weight: 700; }
         .updated { font-size: 11px; color: #6b7280; margin-top: 2px; }
@@ -44,7 +52,7 @@
             flex-shrink: 0;
         }
         .period-btn {
-            padding: 7px 12px;
+            padding: 6px 12px;
             border: none;
             background: transparent;
             color: #9ca3af;
@@ -61,30 +69,34 @@
         
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 280px;
-            gap: 16px;
+            grid-template-columns: 1fr 260px;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
         }
         
         .chart-container {
             background: #111;
             border-radius: 12px;
-            padding: 16px;
-            height: 420px;
-            min-width: 0;
+            padding: 14px;
+            min-height: 0;
         }
         
         .stats-box {
             background: #111;
             border-radius: 12px;
-            padding: 14px;
-            max-height: 420px;
+            padding: 12px;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            min-height: 0;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
+        .stats-box::-webkit-scrollbar { display: none; }
+        
         .stats-title {
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #9ca3af;
         }
         .stats-list { list-style: none; }
@@ -92,7 +104,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
+            padding: 7px 0;
             border-bottom: 1px solid #222;
             transition: all 0.15s;
             -webkit-tap-highlight-color: transparent;
@@ -128,11 +140,11 @@
             border-radius: 50%;
             flex-shrink: 0;
         }
-        .stats-name { font-weight: 500; font-size: 12px; white-space: nowrap; }
-        .stats-symbol { color: #6b7280; font-size: 10px; }
+        .stats-name { font-weight: 500; font-size: 11px; white-space: nowrap; }
+        .stats-symbol { color: #6b7280; font-size: 9px; }
         .stats-perf {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
             flex-shrink: 0;
             margin-left: 8px;
         }
@@ -142,11 +154,12 @@
         .legend {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 16px;
-            padding: 12px;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px 12px;
             background: #111;
-            border-radius: 12px;
+            border-radius: 10px;
+            flex-shrink: 0;
         }
         .legend-item {
             display: flex;
@@ -169,8 +182,11 @@
 
         /* === TABLET === */
         @media (max-width: 1024px) {
-            .main-content { grid-template-columns: 1fr; }
-            .stats-box { max-height: 300px; }
+            .main-content { 
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+            .stats-box { max-height: 180px; }
         }
 
         /* === MOBILE === */
@@ -179,52 +195,55 @@
             .header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 10px;
+                gap: 8px;
+                margin-bottom: 8px;
             }
-            .title { font-size: 17px; }
+            .title { font-size: 16px; }
             .period-buttons {
                 width: 100%;
                 justify-content: space-between;
             }
             .period-btn {
                 flex: 1;
-                padding: 8px 4px;
-                font-size: 12px;
+                padding: 7px 2px;
+                font-size: 11px;
                 text-align: center;
             }
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+                gap: 8px;
+            }
             .chart-container {
-                height: 280px;
-                padding: 10px 6px 10px 10px;
+                padding: 8px 4px 8px 8px;
                 border-radius: 10px;
             }
             .stats-box {
-                padding: 12px;
-                max-height: 280px;
+                padding: 10px;
+                max-height: 150px;
                 border-radius: 10px;
             }
-            .stats-item { padding: 7px 0; }
-            .stats-name { font-size: 11px; }
-            .stats-perf { font-size: 12px; }
+            .stats-item { padding: 5px 0; }
+            .stats-name { font-size: 10px; }
+            .stats-perf { font-size: 11px; }
             .legend {
-                gap: 8px;
-                padding: 10px;
-                border-radius: 10px;
+                gap: 6px;
+                padding: 8px 10px;
+                margin-top: 8px;
+                border-radius: 8px;
             }
             .legend-label { font-size: 9px; }
             .legend-dot { width: 6px; height: 6px; }
         }
 
-        /* === imweb iframe 최적화 === */
-        @media (max-width: 480px) {
+        /* === 아주 작은 화면 (imweb 좁은 임베드) === */
+        @media (max-width: 420px) {
             body { padding: 8px; }
-            .chart-container { height: 250px; padding: 8px 4px 8px 8px; }
-            .stats-box { max-height: 250px; }
+            .title { font-size: 14px; }
+            .stats-box { max-height: 130px; }
+            .legend { gap: 4px; padding: 6px 8px; }
+            .legend-label { font-size: 8px; }
         }
-
-        /* 스크롤바 스타일 */
-        .stats-box::-webkit-scrollbar { width: 4px; }
-        .stats-box::-webkit-scrollbar-track { background: transparent; }
-        .stats-box::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
     </style>
 </head>
 <body>
