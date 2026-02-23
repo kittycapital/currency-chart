@@ -4,13 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>글로벌 환율 퍼포먼스 비교</title>
+    <meta property="og:title" content="글로벌 환율 퍼포먼스 비교 | HerdVibe">
+    <meta property="og:description" content="주요 통화쌍 환율 변동률 비교 — 달러 강약 흐름 한눈에 파악">
+    <meta property="og:url" content="https://herdvibe.com/31">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
         body { 
-            font-family: 'Inter', -apple-system, sans-serif; 
+            font-family: 'Noto Sans KR', 'Inter', -apple-system, sans-serif; 
             background: #000; 
             color: #fff;
             min-height: 100vh;
@@ -18,17 +24,62 @@
         }
         .container { max-width: 1400px; margin: 0 auto; }
         
+        /* Header */
         .header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 16px;
+            text-align: center;
+            margin-bottom: 8px;
         }
-        .title { font-size: 24px; font-weight: 700; }
+        .title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .subtitle { color: #9ca3af; font-size: 13px; margin-bottom: 4px; }
         .updated { font-size: 12px; color: #6b7280; }
+
+        /* Guide */
+        .guide-toggle { 
+            text-align: center; margin: 16px 0 12px; 
+        }
+        .guide-toggle button {
+            background: none; border: none; color: #9ca3af; font-size: 13px;
+            cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .guide-toggle button:hover { color: #fff; }
+        .guide-toggle .arrow { transition: transform 0.3s; display: inline-block; font-size: 10px; }
+        .guide-toggle .arrow.open { transform: rotate(180deg); }
+        .guide-content {
+            display: none; background: #111; border-radius: 12px; padding: 20px 24px;
+            margin-bottom: 16px; font-size: 13px; color: #9ca3af; line-height: 1.8;
+        }
+        .guide-content.show { display: block; }
+        .guide-content strong { color: #d1d5db; }
+        .guide-content ul { margin: 8px 0 8px 20px; }
         
+        /* Share bar */
+        .share-bar { display: flex; gap: 6px; justify-content: center; margin: 12px 0 16px; flex-wrap: wrap; }
+        .share-btn-s {
+            display: flex; align-items: center; gap: 5px; padding: 6px 12px;
+            border-radius: 6px; border: 1px solid #2a2a2a; background: #111;
+            color: #a1a1aa; font-size: 11px; cursor: pointer; font-family: inherit;
+            transition: all 0.2s; text-decoration: none;
+        }
+        .share-btn-s:hover { border-color: #444; color: #fff; }
+        .share-btn-s svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .share-btn-s.twitter:hover { border-color: #1d9bf0; color: #1d9bf0; }
+        .share-btn-s.kakao:hover { border-color: #fee500; color: #fee500; }
+        .share-btn-s.telegram:hover { border-color: #26a5e4; color: #26a5e4; }
+        .share-btn-s.instagram:hover { border-color: #e1306c; color: #e1306c; }
+        .share-btn-s.copy:hover { border-color: #00d4aa; color: #00d4aa; }
+        .share-btn-s.copied { border-color: #00d4aa; color: #00d4aa; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: #222; color: #fff; padding: 10px 20px; border-radius: 8px;
+            font-size: 13px; opacity: 0; transition: all 0.3s; z-index: 9999;
+            pointer-events: none; border: 1px solid #333;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Period buttons */
+        .period-row { display: flex; justify-content: center; margin-bottom: 16px; }
         .period-buttons {
             display: flex;
             gap: 8px;
@@ -46,6 +97,7 @@
             cursor: pointer;
             border-radius: 6px;
             transition: all 0.2s;
+            font-family: inherit;
         }
         .period-btn:hover { color: #fff; }
         .period-btn.active { background: #3b82f6; color: #fff; }
@@ -54,9 +106,6 @@
             display: grid;
             grid-template-columns: 1fr 300px;
             gap: 20px;
-        }
-        @media (max-width: 1024px) {
-            .main-content { grid-template-columns: 1fr; }
         }
         
         .chart-container {
@@ -91,64 +140,92 @@
         .stats-item:hover {
             background: #1a1a1a;
             border-radius: 6px;
-            padding-left: 8px;
-            margin-left: -8px;
-            padding-right: 8px;
-            margin-right: -8px;
+            padding-left: 8px; margin-left: -8px;
+            padding-right: 8px; margin-right: -8px;
         }
         .stats-item:last-child { border-bottom: none; }
-        .stats-asset {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .stats-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
+        .stats-asset { display: flex; align-items: center; gap: 8px; }
+        .stats-dot { width: 8px; height: 8px; border-radius: 50%; }
         .stats-name { font-weight: 500; font-size: 12px; }
         .stats-symbol { color: #6b7280; font-size: 10px; }
-        .stats-perf {
-            font-weight: 600;
-            font-size: 13px;
-        }
+        .stats-perf { font-weight: 600; font-size: 13px; }
         .stats-perf.positive { color: #22c55e; }
         .stats-perf.negative { color: #ef4444; }
         
         .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 20px;
-            padding: 16px;
-            background: #111;
-            border-radius: 12px;
+            display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px;
+            padding: 16px; background: #111; border-radius: 12px;
         }
         .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-            opacity: 1;
-            transition: opacity 0.2s;
+            display: flex; align-items: center; gap: 5px;
+            cursor: pointer; opacity: 1; transition: opacity 0.2s;
         }
         .legend-item.disabled { opacity: 0.3; }
-        .legend-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
         .legend-label { font-size: 11px; color: #d1d5db; }
+
+        .footer {
+            margin-top: 24px; text-align: center; font-size: 11px; color: #555;
+        }
+
+        /* Watermark */
+        .watermark {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.04);
+            pointer-events: none; white-space: nowrap; letter-spacing: 4px;
+        }
+        .chart-container { position: relative; }
+
+        @media (max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            .title { font-size: 18px; }
+            .chart-container { height: 350px; }
+            .period-btn { padding: 6px 12px; font-size: 12px; }
+            .share-btn-s { padding: 5px 8px; font-size: 10px; }
+            .share-btn-s .label-text { display: none; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <div>
-                <h1 class="title">💱 글로벌 환율 퍼포먼스 비교</h1>
-                <p class="updated">마지막 업데이트: 2026-01-28 09:00</p>
-            </div>
+            <h1 class="title">글로벌 환율 퍼포먼스 비교</h1>
+            <p class="subtitle">주요 통화쌍 환율 변동률 비교 — 달러 강약 흐름 한눈에 파악</p>
+            <p class="updated">마지막 업데이트: <span id="updatedTime">2026-01-28 09:00</span></p>
+        </div>
+
+        <!-- Guide -->
+        <div class="guide-toggle">
+            <button onclick="toggleGuide()">📖 대시보드 활용 가이드 <span class="arrow" id="guideArrow">▼</span></button>
+        </div>
+        <div class="guide-content" id="guideContent">
+            <p><strong>📊 이 대시보드는?</strong></p>
+            <p>주요 13개 통화쌍의 환율 변동률을 한눈에 비교할 수 있는 도구입니다. 달러 대비 각 통화의 강약을 시각적으로 파악하세요.</p>
+            <br>
+            <p><strong>💡 활용 팁</strong></p>
+            <ul>
+                <li><strong>기간 선택</strong> — 1주/1개월/3개월/1년/YTD 기간별 비교</li>
+                <li><strong>범례 클릭</strong> — 특정 통화쌍을 숨기거나 표시</li>
+                <li><strong>수익률 클릭</strong> — 우측 리스트에서 클릭하면 해당 라인 강조</li>
+                <li><strong>양수(+)</strong>는 해당 통화 강세 또는 달러 강세, <strong>음수(-)</strong>는 반대</li>
+            </ul>
+        </div>
+
+        <!-- Share bar -->
+        <div class="share-bar">
+            <button class="share-btn-s twitter" onclick="shareTwitter()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span class="label-text">트위터</span></button>
+            <button class="share-btn-s kakao" onclick="shareKakao()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-5.52 0-10 3.36-10 7.5 0 2.66 1.74 5 4.36 6.33-.14.53-.9 3.4-.93 3.61 0 0-.02.17.09.23.11.07.24.03.24.03.32-.04 3.7-2.42 4.28-2.83.62.09 1.27.13 1.96.13 5.52 0 10-3.36 10-7.5S17.52 3 12 3z"/></svg><span class="label-text">카카오톡</span></button>
+            <button class="share-btn-s telegram" onclick="shareTelegram()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg><span class="label-text">텔레그램</span></button>
+            <button class="share-btn-s instagram" onclick="shareInstagram(this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg><span class="label-text">인스타그램</span></button>
+            <button class="share-btn-s copy" onclick="copyLink(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span class="label-text">링크복사</span></button>
+        </div>
+
+        <!-- Period buttons -->
+        <div class="period-row">
             <div class="period-buttons">
                 <button class="period-btn" data-period="1W">1주</button>
                 <button class="period-btn" data-period="1M">1개월</button>
@@ -160,32 +237,163 @@
         
         <div class="main-content">
             <div class="chart-container">
+                <div class="watermark">herdvibe.com</div>
                 <canvas id="perfChart"></canvas>
             </div>
             
             <div class="stats-box">
-                <div class="stats-title">📈 수익률 (<span id="period-label">YTD</span>)</div>
+                <div class="stats-title">변동률 (<span id="period-label">YTD</span>)</div>
                 <ul class="stats-list" id="stats-list"></ul>
             </div>
         </div>
         
         <div class="legend" id="legend"></div>
+
+        <div class="footer">데이터 출처: Yahoo Finance · 주요 통화쌍 기준 · 투자 판단은 본인의 책임입니다</div>
     </div>
 
+    <div class="toast" id="toast"></div>
+
     <script>
-        const ASSETS_DATA = {"EURUSD=X": {"name": "유로/달러", "color": "#3b82f6", "performance": {"1W": 0.5, "1M": 1.2, "3M": -2.5, "12M": -5.2, "YTD": 0.8}, "prices": [{"date": "2025-01-02", "price": 1.105}, {"date": "2025-02-01", "price": 1.098}, {"date": "2025-03-01", "price": 1.085}, {"date": "2025-04-01", "price": 1.078}, {"date": "2025-05-01", "price": 1.072}, {"date": "2025-06-01", "price": 1.068}, {"date": "2025-07-01", "price": 1.062}, {"date": "2025-08-01", "price": 1.058}, {"date": "2025-09-01", "price": 1.055}, {"date": "2025-10-01", "price": 1.052}, {"date": "2025-11-01", "price": 1.048}, {"date": "2025-12-01", "price": 1.045}, {"date": "2026-01-05", "price": 1.042}, {"date": "2026-01-12", "price": 1.045}, {"date": "2026-01-19", "price": 1.048}, {"date": "2026-01-26", "price": 1.051}, {"date": "2026-01-28", "price": 1.0535}]}, "USDJPY=X": {"name": "달러/엔", "color": "#ef4444", "performance": {"1W": 1.2, "1M": 2.8, "3M": 5.5, "12M": 12.2, "YTD": 3.2}, "prices": [{"date": "2025-01-02", "price": 141.5}, {"date": "2025-02-01", "price": 143.8}, {"date": "2025-03-01", "price": 146.2}, {"date": "2025-04-01", "price": 148.5}, {"date": "2025-05-01", "price": 150.8}, {"date": "2025-06-01", "price": 152.2}, {"date": "2025-07-01", "price": 154.5}, {"date": "2025-08-01", "price": 153.8}, {"date": "2025-09-01", "price": 155.2}, {"date": "2025-10-01", "price": 156.8}, {"date": "2025-11-01", "price": 158.2}, {"date": "2025-12-01", "price": 159.5}, {"date": "2026-01-05", "price": 160.2}, {"date": "2026-01-12", "price": 161.5}, {"date": "2026-01-19", "price": 162.8}, {"date": "2026-01-26", "price": 163.5}, {"date": "2026-01-28", "price": 164.2}]}, "GBPUSD=X": {"name": "파운드/달러", "color": "#22c55e", "performance": {"1W": 0.3, "1M": 0.8, "3M": -1.5, "12M": -3.2, "YTD": 0.5}, "prices": [{"date": "2025-01-02", "price": 1.275}, {"date": "2025-02-01", "price": 1.268}, {"date": "2025-03-01", "price": 1.258}, {"date": "2025-04-01", "price": 1.252}, {"date": "2025-05-01", "price": 1.248}, {"date": "2025-06-01", "price": 1.242}, {"date": "2025-07-01", "price": 1.238}, {"date": "2025-08-01", "price": 1.235}, {"date": "2025-09-01", "price": 1.232}, {"date": "2025-10-01", "price": 1.228}, {"date": "2025-11-01", "price": 1.225}, {"date": "2025-12-01", "price": 1.222}, {"date": "2026-01-05", "price": 1.22}, {"date": "2026-01-12", "price": 1.222}, {"date": "2026-01-19", "price": 1.225}, {"date": "2026-01-26", "price": 1.227}, {"date": "2026-01-28", "price": 1.2285}]}, "USDCHF=X": {"name": "달러/스위스프랑", "color": "#f59e0b", "performance": {"1W": 0.8, "1M": 1.5, "3M": 3.2, "12M": 6.5, "YTD": 1.8}, "prices": [{"date": "2025-01-02", "price": 0.852}, {"date": "2025-02-01", "price": 0.858}, {"date": "2025-03-01", "price": 0.865}, {"date": "2025-04-01", "price": 0.872}, {"date": "2025-05-01", "price": 0.878}, {"date": "2025-06-01", "price": 0.885}, {"date": "2025-07-01", "price": 0.892}, {"date": "2025-08-01", "price": 0.888}, {"date": "2025-09-01", "price": 0.895}, {"date": "2025-10-01", "price": 0.902}, {"date": "2025-11-01", "price": 0.908}, {"date": "2025-12-01", "price": 0.915}, {"date": "2026-01-05", "price": 0.918}, {"date": "2026-01-12", "price": 0.922}, {"date": "2026-01-19", "price": 0.926}, {"date": "2026-01-26", "price": 0.929}, {"date": "2026-01-28", "price": 0.9315}]}, "AUDUSD=X": {"name": "호주달러/달러", "color": "#8b5cf6", "performance": {"1W": -0.5, "1M": -1.2, "3M": -3.5, "12M": -8.2, "YTD": -1.5}, "prices": [{"date": "2025-01-02", "price": 0.682}, {"date": "2025-02-01", "price": 0.675}, {"date": "2025-03-01", "price": 0.668}, {"date": "2025-04-01", "price": 0.662}, {"date": "2025-05-01", "price": 0.655}, {"date": "2025-06-01", "price": 0.648}, {"date": "2025-07-01", "price": 0.642}, {"date": "2025-08-01", "price": 0.638}, {"date": "2025-09-01", "price": 0.635}, {"date": "2025-10-01", "price": 0.632}, {"date": "2025-11-01", "price": 0.628}, {"date": "2025-12-01", "price": 0.625}, {"date": "2026-01-05", "price": 0.623}, {"date": "2026-01-12", "price": 0.621}, {"date": "2026-01-19", "price": 0.619}, {"date": "2026-01-26", "price": 0.6175}, {"date": "2026-01-28", "price": 0.6165}]}, "USDCAD=X": {"name": "달러/캐나다달러", "color": "#06b6d4", "performance": {"1W": 0.5, "1M": 1.2, "3M": 2.8, "12M": 5.5, "YTD": 1.5}, "prices": [{"date": "2025-01-02", "price": 1.352}, {"date": "2025-02-01", "price": 1.362}, {"date": "2025-03-01", "price": 1.372}, {"date": "2025-04-01", "price": 1.382}, {"date": "2025-05-01", "price": 1.392}, {"date": "2025-06-01", "price": 1.402}, {"date": "2025-07-01", "price": 1.412}, {"date": "2025-08-01", "price": 1.408}, {"date": "2025-09-01", "price": 1.418}, {"date": "2025-10-01", "price": 1.428}, {"date": "2025-11-01", "price": 1.438}, {"date": "2025-12-01", "price": 1.448}, {"date": "2026-01-05", "price": 1.452}, {"date": "2026-01-12", "price": 1.458}, {"date": "2026-01-19", "price": 1.464}, {"date": "2026-01-26", "price": 1.469}, {"date": "2026-01-28", "price": 1.4725}]}, "NZDUSD=X": {"name": "뉴질랜드달러/달러", "color": "#ec4899", "performance": {"1W": -0.8, "1M": -1.5, "3M": -4.2, "12M": -9.5, "YTD": -1.8}, "prices": [{"date": "2025-01-02", "price": 0.625}, {"date": "2025-02-01", "price": 0.618}, {"date": "2025-03-01", "price": 0.611}, {"date": "2025-04-01", "price": 0.605}, {"date": "2025-05-01", "price": 0.598}, {"date": "2025-06-01", "price": 0.592}, {"date": "2025-07-01", "price": 0.586}, {"date": "2025-08-01", "price": 0.582}, {"date": "2025-09-01", "price": 0.578}, {"date": "2025-10-01", "price": 0.575}, {"date": "2025-11-01", "price": 0.571}, {"date": "2025-12-01", "price": 0.568}, {"date": "2026-01-05", "price": 0.566}, {"date": "2026-01-12", "price": 0.564}, {"date": "2026-01-19", "price": 0.562}, {"date": "2026-01-26", "price": 0.5605}, {"date": "2026-01-28", "price": 0.5595}]}, "USDKRW=X": {"name": "달러/원", "color": "#84cc16", "performance": {"1W": 1.5, "1M": 3.2, "3M": 6.8, "12M": 15.5, "YTD": 4.2}, "prices": [{"date": "2025-01-02", "price": 1320.5}, {"date": "2025-02-01", "price": 1345.8}, {"date": "2025-03-01", "price": 1368.2}, {"date": "2025-04-01", "price": 1392.5}, {"date": "2025-05-01", "price": 1415.8}, {"date": "2025-06-01", "price": 1438.2}, {"date": "2025-07-01", "price": 1462.5}, {"date": "2025-08-01", "price": 1455.8}, {"date": "2025-09-01", "price": 1478.2}, {"date": "2025-10-01", "price": 1502.5}, {"date": "2025-11-01", "price": 1525.8}, {"date": "2025-12-01", "price": 1548.2}, {"date": "2026-01-05", "price": 1562.5}, {"date": "2026-01-12", "price": 1585.8}, {"date": "2026-01-19", "price": 1608.2}, {"date": "2026-01-26", "price": 1625.5}, {"date": "2026-01-28", "price": 1642.8}]}, "USDCNY=X": {"name": "달러/위안", "color": "#f97316", "performance": {"1W": 0.3, "1M": 0.8, "3M": 1.5, "12M": 3.2, "YTD": 0.8}, "prices": [{"date": "2025-01-02", "price": 7.152}, {"date": "2025-02-01", "price": 7.178}, {"date": "2025-03-01", "price": 7.205}, {"date": "2025-04-01", "price": 7.232}, {"date": "2025-05-01", "price": 7.258}, {"date": "2025-06-01", "price": 7.285}, {"date": "2025-07-01", "price": 7.312}, {"date": "2025-08-01", "price": 7.305}, {"date": "2025-09-01", "price": 7.332}, {"date": "2025-10-01", "price": 7.358}, {"date": "2025-11-01", "price": 7.385}, {"date": "2025-12-01", "price": 7.412}, {"date": "2026-01-05", "price": 7.428}, {"date": "2026-01-12", "price": 7.445}, {"date": "2026-01-19", "price": 7.462}, {"date": "2026-01-26", "price": 7.475}, {"date": "2026-01-28", "price": 7.4865}]}, "USDHKD=X": {"name": "달러/홍콩달러", "color": "#14b8a6", "performance": {"1W": 0.02, "1M": 0.05, "3M": 0.08, "12M": 0.15, "YTD": 0.05}, "prices": [{"date": "2025-01-02", "price": 7.785}, {"date": "2025-02-01", "price": 7.7865}, {"date": "2025-03-01", "price": 7.788}, {"date": "2025-04-01", "price": 7.7895}, {"date": "2025-05-01", "price": 7.791}, {"date": "2025-06-01", "price": 7.7925}, {"date": "2025-07-01", "price": 7.794}, {"date": "2025-08-01", "price": 7.7935}, {"date": "2025-09-01", "price": 7.795}, {"date": "2025-10-01", "price": 7.7965}, {"date": "2025-11-01", "price": 7.798}, {"date": "2025-12-01", "price": 7.7995}, {"date": "2026-01-05", "price": 7.8005}, {"date": "2026-01-12", "price": 7.8015}, {"date": "2026-01-19", "price": 7.8025}, {"date": "2026-01-26", "price": 7.8032}, {"date": "2026-01-28", "price": 7.8038}]}, "USDSGD=X": {"name": "달러/싱가포르달러", "color": "#a855f7", "performance": {"1W": 0.3, "1M": 0.6, "3M": 1.2, "12M": 2.8, "YTD": 0.7}, "prices": [{"date": "2025-01-02", "price": 1.325}, {"date": "2025-02-01", "price": 1.3295}, {"date": "2025-03-01", "price": 1.334}, {"date": "2025-04-01", "price": 1.3385}, {"date": "2025-05-01", "price": 1.343}, {"date": "2025-06-01", "price": 1.3475}, {"date": "2025-07-01", "price": 1.352}, {"date": "2025-08-01", "price": 1.3505}, {"date": "2025-09-01", "price": 1.355}, {"date": "2025-10-01", "price": 1.3595}, {"date": "2025-11-01", "price": 1.364}, {"date": "2025-12-01", "price": 1.3685}, {"date": "2026-01-05", "price": 1.371}, {"date": "2026-01-12", "price": 1.374}, {"date": "2026-01-19", "price": 1.377}, {"date": "2026-01-26", "price": 1.3795}, {"date": "2026-01-28", "price": 1.3815}]}, "USDMXN=X": {"name": "달러/멕시코페소", "color": "#eab308", "performance": {"1W": 1.8, "1M": 4.2, "3M": 8.5, "12M": 18.2, "YTD": 5.2}, "prices": [{"date": "2025-01-02", "price": 17.25}, {"date": "2025-02-01", "price": 17.65}, {"date": "2025-03-01", "price": 18.05}, {"date": "2025-04-01", "price": 18.45}, {"date": "2025-05-01", "price": 18.85}, {"date": "2025-06-01", "price": 19.25}, {"date": "2025-07-01", "price": 19.65}, {"date": "2025-08-01", "price": 19.52}, {"date": "2025-09-01", "price": 19.92}, {"date": "2025-10-01", "price": 20.32}, {"date": "2025-11-01", "price": 20.72}, {"date": "2025-12-01", "price": 21.12}, {"date": "2026-01-05", "price": 21.38}, {"date": "2026-01-12", "price": 21.68}, {"date": "2026-01-19", "price": 21.98}, {"date": "2026-01-26", "price": 22.22}, {"date": "2026-01-28", "price": 22.45}]}, "USDTRY=X": {"name": "달러/터키리라", "color": "#e11d48", "performance": {"1W": 2.5, "1M": 5.8, "3M": 15.2, "12M": 42.5, "YTD": 7.5}, "prices": [{"date": "2025-01-02", "price": 32.5}, {"date": "2025-02-01", "price": 34.2}, {"date": "2025-03-01", "price": 35.9}, {"date": "2025-04-01", "price": 37.6}, {"date": "2025-05-01", "price": 39.3}, {"date": "2025-06-01", "price": 41.0}, {"date": "2025-07-01", "price": 42.7}, {"date": "2025-08-01", "price": 42.2}, {"date": "2025-09-01", "price": 43.9}, {"date": "2025-10-01", "price": 45.6}, {"date": "2025-11-01", "price": 47.3}, {"date": "2025-12-01", "price": 49.0}, {"date": "2026-01-05", "price": 50.2}, {"date": "2026-01-12", "price": 51.8}, {"date": "2026-01-19", "price": 53.4}, {"date": "2026-01-26", "price": 54.7}, {"date": "2026-01-28", "price": 55.85}]}};
+        /* ══════════════════════════════════════════════
+           Constants & Config
+        ══════════════════════════════════════════════ */
+        const SHARE_URL = 'https://herdvibe.com/31';
+        const SHARE_TITLE = '글로벌 환율 퍼포먼스 비교';
+        const SHARE_DESC = '주요 통화쌍 환율 변동률 비교 — 달러 강약 흐름 한눈에 파악';
+
+        const ASSETS_DATA = {"EURUSD=X": {"name": "\uc720\ub85c/\ub2ec\ub7ec", "color": "#3b82f6", "performance": {"1W": 0.5, "1M": 1.2, "3M": -2.5, "12M": -5.2, "YTD": 0.8}, "prices": [{"date": "2025-01-02", "price": 1.105}, {"date": "2025-02-01", "price": 1.098}, {"date": "2025-03-01", "price": 1.085}, {"date": "2025-04-01", "price": 1.078}, {"date": "2025-05-01", "price": 1.072}, {"date": "2025-06-01", "price": 1.068}, {"date": "2025-07-01", "price": 1.062}, {"date": "2025-08-01", "price": 1.058}, {"date": "2025-09-01", "price": 1.055}, {"date": "2025-10-01", "price": 1.052}, {"date": "2025-11-01", "price": 1.048}, {"date": "2025-12-01", "price": 1.045}, {"date": "2026-01-05", "price": 1.042}, {"date": "2026-01-12", "price": 1.045}, {"date": "2026-01-19", "price": 1.048}, {"date": "2026-01-26", "price": 1.051}, {"date": "2026-01-28", "price": 1.0535}]}, "USDJPY=X": {"name": "\ub2ec\ub7ec/\uc5d4", "color": "#ef4444", "performance": {"1W": 1.2, "1M": 2.8, "3M": 5.5, "12M": 12.2, "YTD": 3.2}, "prices": [{"date": "2025-01-02", "price": 141.5}, {"date": "2025-02-01", "price": 143.8}, {"date": "2025-03-01", "price": 146.2}, {"date": "2025-04-01", "price": 148.5}, {"date": "2025-05-01", "price": 150.8}, {"date": "2025-06-01", "price": 152.2}, {"date": "2025-07-01", "price": 154.5}, {"date": "2025-08-01", "price": 153.8}, {"date": "2025-09-01", "price": 155.2}, {"date": "2025-10-01", "price": 156.8}, {"date": "2025-11-01", "price": 158.2}, {"date": "2025-12-01", "price": 159.5}, {"date": "2026-01-05", "price": 160.2}, {"date": "2026-01-12", "price": 161.5}, {"date": "2026-01-19", "price": 162.8}, {"date": "2026-01-26", "price": 163.5}, {"date": "2026-01-28", "price": 164.2}]}, "GBPUSD=X": {"name": "\ud30c\uc6b4\ub4dc/\ub2ec\ub7ec", "color": "#22c55e", "performance": {"1W": 0.3, "1M": 0.8, "3M": -1.5, "12M": -3.2, "YTD": 0.5}, "prices": [{"date": "2025-01-02", "price": 1.275}, {"date": "2025-02-01", "price": 1.268}, {"date": "2025-03-01", "price": 1.258}, {"date": "2025-04-01", "price": 1.252}, {"date": "2025-05-01", "price": 1.248}, {"date": "2025-06-01", "price": 1.242}, {"date": "2025-07-01", "price": 1.238}, {"date": "2025-08-01", "price": 1.235}, {"date": "2025-09-01", "price": 1.232}, {"date": "2025-10-01", "price": 1.228}, {"date": "2025-11-01", "price": 1.225}, {"date": "2025-12-01", "price": 1.222}, {"date": "2026-01-05", "price": 1.22}, {"date": "2026-01-12", "price": 1.222}, {"date": "2026-01-19", "price": 1.225}, {"date": "2026-01-26", "price": 1.227}, {"date": "2026-01-28", "price": 1.2285}]}, "USDCHF=X": {"name": "\ub2ec\ub7ec/\uc2a4\uc704\uc2a4\ud504\ub791", "color": "#f59e0b", "performance": {"1W": 0.8, "1M": 1.5, "3M": 3.2, "12M": 6.5, "YTD": 1.8}, "prices": [{"date": "2025-01-02", "price": 0.852}, {"date": "2025-02-01", "price": 0.858}, {"date": "2025-03-01", "price": 0.865}, {"date": "2025-04-01", "price": 0.872}, {"date": "2025-05-01", "price": 0.878}, {"date": "2025-06-01", "price": 0.885}, {"date": "2025-07-01", "price": 0.892}, {"date": "2025-08-01", "price": 0.888}, {"date": "2025-09-01", "price": 0.895}, {"date": "2025-10-01", "price": 0.902}, {"date": "2025-11-01", "price": 0.908}, {"date": "2025-12-01", "price": 0.915}, {"date": "2026-01-05", "price": 0.918}, {"date": "2026-01-12", "price": 0.922}, {"date": "2026-01-19", "price": 0.926}, {"date": "2026-01-26", "price": 0.929}, {"date": "2026-01-28", "price": 0.9315}]}, "AUDUSD=X": {"name": "\ud638\uc8fc\ub2ec\ub7ec/\ub2ec\ub7ec", "color": "#8b5cf6", "performance": {"1W": -0.5, "1M": -1.2, "3M": -3.5, "12M": -8.2, "YTD": -1.5}, "prices": [{"date": "2025-01-02", "price": 0.682}, {"date": "2025-02-01", "price": 0.675}, {"date": "2025-03-01", "price": 0.668}, {"date": "2025-04-01", "price": 0.662}, {"date": "2025-05-01", "price": 0.655}, {"date": "2025-06-01", "price": 0.648}, {"date": "2025-07-01", "price": 0.642}, {"date": "2025-08-01", "price": 0.638}, {"date": "2025-09-01", "price": 0.635}, {"date": "2025-10-01", "price": 0.632}, {"date": "2025-11-01", "price": 0.628}, {"date": "2025-12-01", "price": 0.625}, {"date": "2026-01-05", "price": 0.623}, {"date": "2026-01-12", "price": 0.621}, {"date": "2026-01-19", "price": 0.619}, {"date": "2026-01-26", "price": 0.6175}, {"date": "2026-01-28", "price": 0.6165}]}, "USDCAD=X": {"name": "\ub2ec\ub7ec/\uce90\ub098\ub2e4\ub2ec\ub7ec", "color": "#06b6d4", "performance": {"1W": 0.5, "1M": 1.2, "3M": 2.8, "12M": 5.5, "YTD": 1.5}, "prices": [{"date": "2025-01-02", "price": 1.352}, {"date": "2025-02-01", "price": 1.362}, {"date": "2025-03-01", "price": 1.372}, {"date": "2025-04-01", "price": 1.382}, {"date": "2025-05-01", "price": 1.392}, {"date": "2025-06-01", "price": 1.402}, {"date": "2025-07-01", "price": 1.412}, {"date": "2025-08-01", "price": 1.408}, {"date": "2025-09-01", "price": 1.418}, {"date": "2025-10-01", "price": 1.428}, {"date": "2025-11-01", "price": 1.438}, {"date": "2025-12-01", "price": 1.448}, {"date": "2026-01-05", "price": 1.452}, {"date": "2026-01-12", "price": 1.458}, {"date": "2026-01-19", "price": 1.464}, {"date": "2026-01-26", "price": 1.469}, {"date": "2026-01-28", "price": 1.4725}]}, "NZDUSD=X": {"name": "\ub274\uc9c8\ub79c\ub4dc\ub2ec\ub7ec/\ub2ec\ub7ec", "color": "#ec4899", "performance": {"1W": -0.8, "1M": -1.5, "3M": -4.2, "12M": -9.5, "YTD": -1.8}, "prices": [{"date": "2025-01-02", "price": 0.625}, {"date": "2025-02-01", "price": 0.618}, {"date": "2025-03-01", "price": 0.611}, {"date": "2025-04-01", "price": 0.605}, {"date": "2025-05-01", "price": 0.598}, {"date": "2025-06-01", "price": 0.592}, {"date": "2025-07-01", "price": 0.586}, {"date": "2025-08-01", "price": 0.582}, {"date": "2025-09-01", "price": 0.578}, {"date": "2025-10-01", "price": 0.575}, {"date": "2025-11-01", "price": 0.571}, {"date": "2025-12-01", "price": 0.568}, {"date": "2026-01-05", "price": 0.566}, {"date": "2026-01-12", "price": 0.564}, {"date": "2026-01-19", "price": 0.562}, {"date": "2026-01-26", "price": 0.5605}, {"date": "2026-01-28", "price": 0.5595}]}, "USDKRW=X": {"name": "\ub2ec\ub7ec/\uc6d0", "color": "#84cc16", "performance": {"1W": 1.5, "1M": 3.2, "3M": 6.8, "12M": 15.5, "YTD": 4.2}, "prices": [{"date": "2025-01-02", "price": 1320.5}, {"date": "2025-02-01", "price": 1345.8}, {"date": "2025-03-01", "price": 1368.2}, {"date": "2025-04-01", "price": 1392.5}, {"date": "2025-05-01", "price": 1415.8}, {"date": "2025-06-01", "price": 1438.2}, {"date": "2025-07-01", "price": 1462.5}, {"date": "2025-08-01", "price": 1455.8}, {"date": "2025-09-01", "price": 1478.2}, {"date": "2025-10-01", "price": 1502.5}, {"date": "2025-11-01", "price": 1525.8}, {"date": "2025-12-01", "price": 1548.2}, {"date": "2026-01-05", "price": 1562.5}, {"date": "2026-01-12", "price": 1585.8}, {"date": "2026-01-19", "price": 1608.2}, {"date": "2026-01-26", "price": 1625.5}, {"date": "2026-01-28", "price": 1642.8}]}, "USDCNY=X": {"name": "\ub2ec\ub7ec/\uc704\uc548", "color": "#f97316", "performance": {"1W": 0.3, "1M": 0.8, "3M": 1.5, "12M": 3.2, "YTD": 0.8}, "prices": [{"date": "2025-01-02", "price": 7.152}, {"date": "2025-02-01", "price": 7.178}, {"date": "2025-03-01", "price": 7.205}, {"date": "2025-04-01", "price": 7.232}, {"date": "2025-05-01", "price": 7.258}, {"date": "2025-06-01", "price": 7.285}, {"date": "2025-07-01", "price": 7.312}, {"date": "2025-08-01", "price": 7.305}, {"date": "2025-09-01", "price": 7.332}, {"date": "2025-10-01", "price": 7.358}, {"date": "2025-11-01", "price": 7.385}, {"date": "2025-12-01", "price": 7.412}, {"date": "2026-01-05", "price": 7.428}, {"date": "2026-01-12", "price": 7.445}, {"date": "2026-01-19", "price": 7.462}, {"date": "2026-01-26", "price": 7.475}, {"date": "2026-01-28", "price": 7.4865}]}, "USDHKD=X": {"name": "\ub2ec\ub7ec/\ud64d\ucf69\ub2ec\ub7ec", "color": "#14b8a6", "performance": {"1W": 0.02, "1M": 0.05, "3M": 0.08, "12M": 0.15, "YTD": 0.05}, "prices": [{"date": "2025-01-02", "price": 7.785}, {"date": "2025-02-01", "price": 7.7865}, {"date": "2025-03-01", "price": 7.788}, {"date": "2025-04-01", "price": 7.7895}, {"date": "2025-05-01", "price": 7.791}, {"date": "2025-06-01", "price": 7.7925}, {"date": "2025-07-01", "price": 7.794}, {"date": "2025-08-01", "price": 7.7935}, {"date": "2025-09-01", "price": 7.795}, {"date": "2025-10-01", "price": 7.7965}, {"date": "2025-11-01", "price": 7.798}, {"date": "2025-12-01", "price": 7.7995}, {"date": "2026-01-05", "price": 7.8005}, {"date": "2026-01-12", "price": 7.8015}, {"date": "2026-01-19", "price": 7.8025}, {"date": "2026-01-26", "price": 7.8032}, {"date": "2026-01-28", "price": 7.8038}]}, "USDSGD=X": {"name": "\ub2ec\ub7ec/\uc2f1\uac00\ud3ec\ub974\ub2ec\ub7ec", "color": "#a855f7", "performance": {"1W": 0.3, "1M": 0.6, "3M": 1.2, "12M": 2.8, "YTD": 0.7}, "prices": [{"date": "2025-01-02", "price": 1.325}, {"date": "2025-02-01", "price": 1.3295}, {"date": "2025-03-01", "price": 1.334}, {"date": "2025-04-01", "price": 1.3385}, {"date": "2025-05-01", "price": 1.343}, {"date": "2025-06-01", "price": 1.3475}, {"date": "2025-07-01", "price": 1.352}, {"date": "2025-08-01", "price": 1.3505}, {"date": "2025-09-01", "price": 1.355}, {"date": "2025-10-01", "price": 1.3595}, {"date": "2025-11-01", "price": 1.364}, {"date": "2025-12-01", "price": 1.3685}, {"date": "2026-01-05", "price": 1.371}, {"date": "2026-01-12", "price": 1.374}, {"date": "2026-01-19", "price": 1.377}, {"date": "2026-01-26", "price": 1.3795}, {"date": "2026-01-28", "price": 1.3815}]}, "USDMXN=X": {"name": "\ub2ec\ub7ec/\uba55\uc2dc\ucf54\ud398\uc18c", "color": "#eab308", "performance": {"1W": 1.8, "1M": 4.2, "3M": 8.5, "12M": 18.2, "YTD": 5.2}, "prices": [{"date": "2025-01-02", "price": 17.25}, {"date": "2025-02-01", "price": 17.65}, {"date": "2025-03-01", "price": 18.05}, {"date": "2025-04-01", "price": 18.45}, {"date": "2025-05-01", "price": 18.85}, {"date": "2025-06-01", "price": 19.25}, {"date": "2025-07-01", "price": 19.65}, {"date": "2025-08-01", "price": 19.52}, {"date": "2025-09-01", "price": 19.92}, {"date": "2025-10-01", "price": 20.32}, {"date": "2025-11-01", "price": 20.72}, {"date": "2025-12-01", "price": 21.12}, {"date": "2026-01-05", "price": 21.38}, {"date": "2026-01-12", "price": 21.68}, {"date": "2026-01-19", "price": 21.98}, {"date": "2026-01-26", "price": 22.22}, {"date": "2026-01-28", "price": 22.45}]}, "USDTRY=X": {"name": "\ub2ec\ub7ec/\ud130\ud0a4\ub9ac\ub77c", "color": "#e11d48", "performance": {"1W": 2.5, "1M": 5.8, "3M": 15.2, "12M": 42.5, "YTD": 7.5}, "prices": [{"date": "2025-01-02", "price": 32.5}, {"date": "2025-02-01", "price": 34.2}, {"date": "2025-03-01", "price": 35.9}, {"date": "2025-04-01", "price": 37.6}, {"date": "2025-05-01", "price": 39.3}, {"date": "2025-06-01", "price": 41.0}, {"date": "2025-07-01", "price": 42.7}, {"date": "2025-08-01", "price": 42.2}, {"date": "2025-09-01", "price": 43.9}, {"date": "2025-10-01", "price": 45.6}, {"date": "2025-11-01", "price": 47.3}, {"date": "2025-12-01", "price": 49.0}, {"date": "2026-01-05", "price": 50.2}, {"date": "2026-01-12", "price": 51.8}, {"date": "2026-01-19", "price": 53.4}, {"date": "2026-01-26", "price": 54.7}, {"date": "2026-01-28", "price": 55.85}]}};
         
         let currentPeriod = 'YTD';
         let chart = null;
         let hiddenAssets = new Set();
         let selectedAsset = null;
         
-        // 티커에서 표시용 이름 추출 (EURUSD=X -> EURUSD)
+        /* ══════════════════════════════════════════════
+           Guide toggle
+        ══════════════════════════════════════════════ */
+        function toggleGuide() {
+            var c = document.getElementById('guideContent');
+            var a = document.getElementById('guideArrow');
+            c.classList.toggle('show');
+            a.classList.toggle('open');
+            postHeight();
+        }
+
+        /* ══════════════════════════════════════════════
+           Share functions (iframe-compatible)
+        ══════════════════════════════════════════════ */
+        function openUrlSafe(url) {
+            var a = document.createElement('a');
+            a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        function doCopy(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function() {
+                    if (window.self !== window.top) {
+                        window.parent.postMessage({ type: 'clipboard', text: text }, '*');
+                    } else { execCopy(text); }
+                });
+            } else if (window.self !== window.top) {
+                window.parent.postMessage({ type: 'clipboard', text: text }, '*');
+            } else { execCopy(text); }
+        }
+
+        function execCopy(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
+            document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); } catch(e) {}
+            document.body.removeChild(ta);
+        }
+
+        function showToast(msg) {
+            var t = document.getElementById('toast');
+            t.textContent = msg; t.classList.add('show');
+            setTimeout(function() { t.classList.remove('show'); }, 2500);
+        }
+
+        function shareTwitter() {
+            var text = '💱 글로벌 환율 퍼포먼스 비교 — 주요 13개 통화쌍 변동률 한눈에';
+            openUrlSafe('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(SHARE_URL));
+        }
+
+        function shareKakao() {
+            if (typeof Kakao !== 'undefined' && Kakao.isInitialized()) {
+                Kakao.Share.sendDefault({
+                    objectType: 'feed',
+                    content: {
+                        title: SHARE_TITLE,
+                        description: SHARE_DESC,
+                        imageUrl: 'https://herdvibe.com/og-currency.png',
+                        link: { mobileWebUrl: SHARE_URL, webUrl: SHARE_URL }
+                    },
+                    buttons: [{ title: '대시보드 보기', link: { mobileWebUrl: SHARE_URL, webUrl: SHARE_URL } }]
+                });
+            } else {
+                openUrlSafe('https://story.kakao.com/share?url=' + encodeURIComponent(SHARE_URL));
+            }
+        }
+
+        function shareTelegram() {
+            var text = '💱 글로벌 환율 퍼포먼스 비교';
+            openUrlSafe('https://t.me/share/url?url=' + encodeURIComponent(SHARE_URL) + '&text=' + encodeURIComponent(text));
+        }
+
+        function shareInstagram(btn) {
+            doCopy(SHARE_URL);
+            if (btn) { btn.classList.add('copied'); setTimeout(function(){ btn.classList.remove('copied'); }, 2000); }
+            showToast('📋 링크 복사됨 — 인스타그램 스토리에 붙여넣기');
+        }
+
+        function copyLink(btn) {
+            doCopy(SHARE_URL);
+            if (btn) {
+                btn.classList.add('copied');
+                var label = btn.querySelector('.label-text');
+                if (label) { var orig = label.textContent; label.textContent = '복사됨!'; setTimeout(function(){ label.textContent = orig; btn.classList.remove('copied'); }, 2000); }
+            }
+            showToast('📋 링크가 복사되었습니다');
+        }
+
+        // Kakao init
+        try { if (typeof Kakao !== 'undefined' && !Kakao.isInitialized()) Kakao.init('a43ed7b39fac35458f4f9df925a279b5'); } catch(e) {}
+
+        /* ══════════════════════════════════════════════
+           iframe ↔ 부모 통신 브릿지
+        ══════════════════════════════════════════════ */
+        var isIframe = window.self !== window.top;
+
+        function postHeight() {
+            if (!isIframe) return;
+            var h = document.documentElement.scrollHeight;
+            window.parent.postMessage({ type: 'resize', height: h }, '*');
+        }
+
+        window.addEventListener('load', function() {
+            postHeight();
+            setTimeout(postHeight, 500);
+            setTimeout(postHeight, 1500);
+        });
+
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(postHeight).observe(document.documentElement);
+        }
+        if (typeof MutationObserver !== 'undefined') {
+            new MutationObserver(postHeight).observe(document.body, {
+                childList: true, subtree: true, attributes: true
+            });
+        }
+
+        /* ══════════════════════════════════════════════
+           Chart logic (original)
+        ══════════════════════════════════════════════ */
         function getDisplaySymbol(ticker) {
             return ticker.replace('=X', '');
         }
         
-        // 기간별 날짜 계산
         function getStartDate(period) {
             const now = new Date();
             switch(period) {
@@ -198,13 +406,10 @@
             }
         }
         
-        // 가격 데이터를 % 변화로 변환
         function calculatePercentChange(prices, startDate) {
             const startStr = startDate.toISOString().split('T')[0];
             const filtered = prices.filter(p => p.date >= startStr);
-            
             if (filtered.length === 0) return [];
-            
             const basePrice = filtered[0].price;
             return filtered.map(p => ({
                 x: p.date,
@@ -212,7 +417,6 @@
             }));
         }
         
-        // 차트 생성/업데이트
         function updateChart() {
             const startDate = getStartDate(currentPeriod);
             const datasets = [];
@@ -222,17 +426,15 @@
                 
                 const percentData = calculatePercentChange(data.prices, startDate);
                 if (percentData.length > 0) {
-                    // 선택 상태에 따른 스타일 결정
                     let borderWidth = 2;
                     let borderColor = data.color;
                     
                     if (selectedAsset) {
                         if (symbol === selectedAsset) {
                             borderWidth = 4;
-                            borderColor = data.color;
                         } else {
                             borderWidth = 1;
-                            borderColor = data.color + '50'; // 30% opacity
+                            borderColor = data.color + '50';
                         }
                     }
                     
@@ -263,13 +465,8 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: {
-                            padding: { right: 85 }
-                        },
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
+                        layout: { padding: { right: 85 } },
+                        interaction: { mode: 'index', intersect: false },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
@@ -289,13 +486,8 @@
                             x: {
                                 type: 'time',
                                 time: {
-                                    unit: currentPeriod === '1W' ? 'day' : 
-                                          currentPeriod === '1M' ? 'week' : 'month',
-                                    displayFormats: {
-                                        day: 'MM/dd',
-                                        week: 'MM/dd',
-                                        month: 'yy/MM'
-                                    }
+                                    unit: currentPeriod === '1W' ? 'day' : currentPeriod === '1M' ? 'week' : 'month',
+                                    displayFormats: { day: 'MM/dd', week: 'MM/dd', month: 'yy/MM' }
                                 },
                                 grid: { color: '#222' },
                                 ticks: { color: '#6b7280', font: { size: 10 } }
@@ -315,46 +507,32 @@
                         afterDraw: (chart) => {
                             const ctx = chart.ctx;
                             const chartArea = chart.chartArea;
-                            
-                            // Collect all end points with their y positions
                             const endpoints = [];
                             
                             chart.data.datasets.forEach((dataset, i) => {
                                 const meta = chart.getDatasetMeta(i);
                                 if (meta.hidden) return;
-                                
                                 const lastPoint = meta.data[meta.data.length - 1];
                                 if (!lastPoint) return;
-                                
                                 const value = parseFloat(dataset.data[dataset.data.length - 1].y);
                                 endpoints.push({
-                                    y: lastPoint.y,
-                                    originalY: lastPoint.y,
-                                    value: value,
-                                    label: dataset.label,
-                                    color: dataset.borderColor
+                                    y: lastPoint.y, originalY: lastPoint.y,
+                                    value: value, label: dataset.label, color: dataset.borderColor
                                 });
                             });
                             
-                            // Sort by y position
                             endpoints.sort((a, b) => a.y - b.y);
-                            
-                            // Adjust overlapping labels (minimum 14px apart)
                             const minGap = 14;
                             for (let i = 1; i < endpoints.length; i++) {
-                                const prev = endpoints[i - 1];
-                                const curr = endpoints[i];
-                                if (curr.y - prev.y < minGap) {
-                                    curr.y = prev.y + minGap;
+                                if (endpoints[i].y - endpoints[i-1].y < minGap) {
+                                    endpoints[i].y = endpoints[i-1].y + minGap;
                                 }
                             }
                             
-                            // Draw labels
                             ctx.save();
                             endpoints.forEach(ep => {
                                 const sign = ep.value >= 0 ? '+' : '';
                                 const text = `${ep.label} ${sign}${ep.value.toFixed(1)}%`;
-                                
                                 ctx.font = 'bold 9px Inter, sans-serif';
                                 ctx.fillStyle = ep.color;
                                 ctx.textAlign = 'left';
@@ -366,15 +544,14 @@
                     }]
                 });
             }
+            setTimeout(postHeight, 300);
         }
         
-        // Stats 박스 업데이트
         function updateStats() {
             const list = document.getElementById('stats-list');
             const periodLabel = document.getElementById('period-label');
             periodLabel.textContent = currentPeriod;
             
-            // 성과순 정렬
             const sorted = Object.entries(ASSETS_DATA)
                 .map(([symbol, data]) => ({
                     symbol,
@@ -393,11 +570,8 @@
                 const isSelected = selectedAsset === asset.symbol;
                 
                 let opacity = '1';
-                if (isHidden) {
-                    opacity = '0.3';
-                } else if (selectedAsset && !isSelected) {
-                    opacity = '0.4';
-                }
+                if (isHidden) opacity = '0.3';
+                else if (selectedAsset && !isSelected) opacity = '0.4';
                 
                 const selectedStyle = isSelected ? 'background: #1f2937; border-radius: 6px; padding-left: 8px; margin-left: -8px; padding-right: 8px; margin-right: -8px;' : '';
                 
@@ -412,25 +586,18 @@
                 `;
             }).join('');
             
-            // Stats 아이템 클릭 이벤트
             list.querySelectorAll('.stats-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const symbol = item.dataset.symbol;
-                    if (selectedAsset === symbol) {
-                        selectedAsset = null; // 같은 거 클릭하면 해제
-                    } else {
-                        selectedAsset = symbol; // 새로운 거 선택
-                    }
+                    selectedAsset = selectedAsset === symbol ? null : symbol;
                     updateChart();
                     updateStats();
                 });
             });
         }
         
-        // 범례 생성
         function createLegend() {
             const legend = document.getElementById('legend');
-            
             legend.innerHTML = Object.entries(ASSETS_DATA).map(([symbol, data]) => `
                 <div class="legend-item" data-symbol="${symbol}">
                     <div class="legend-dot" style="background: ${data.color}"></div>
@@ -438,7 +605,6 @@
                 </div>
             `).join('');
             
-            // 클릭 이벤트
             legend.querySelectorAll('.legend-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const symbol = item.dataset.symbol;
@@ -455,7 +621,6 @@
             });
         }
         
-        // 기간 버튼 이벤트
         document.querySelectorAll('.period-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -466,7 +631,6 @@
             });
         });
         
-        // 초기화
         createLegend();
         updateChart();
         updateStats();
