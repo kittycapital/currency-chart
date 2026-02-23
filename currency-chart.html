@@ -18,8 +18,8 @@
         ::-webkit-scrollbar { display: none; }
         * { -ms-overflow-style: none; scrollbar-width: none; }
         html, body {
-            height: 100%;
-            overflow: hidden;
+            height: auto;
+            overflow-x: hidden;
         }
         body { 
             font-family: 'Noto Sans KR', 'Inter', -apple-system, sans-serif; 
@@ -30,14 +30,13 @@
         }
         .container { 
             max-width: 1400px; margin: 0 auto; width: 100%;
-            height: 100%; display: flex; flex-direction: column;
+            padding: 12px 0;
         }
         
         /* Header */
         .header { 
             text-align: center;
-            padding: 16px 16px 8px;
-            flex-shrink: 0;
+            padding: 8px 16px 4px;
         }
         .title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
         .subtitle { color: #9ca3af; font-size: 13px; margin-bottom: 4px; }
@@ -45,7 +44,7 @@
 
         /* Guide */
         .guide-toggle { 
-            text-align: center; margin: 8px 0 6px; flex-shrink: 0;
+            text-align: center; margin: 8px 0 6px; 
         }
         .guide-toggle button {
             background: none; border: none; color: #9ca3af; font-size: 13px;
@@ -56,14 +55,14 @@
         .guide-toggle .arrow.open { transform: rotate(180deg); }
         .guide-content {
             display: none; background: #111; border-radius: 12px; padding: 16px 20px;
-            margin: 0 16px 8px; font-size: 13px; color: #9ca3af; line-height: 1.8; flex-shrink: 0;
+            margin: 0 16px 8px; font-size: 13px; color: #9ca3af; line-height: 1.8; 
         }
         .guide-content.show { display: block; }
         .guide-content strong { color: #d1d5db; }
         .guide-content ul { margin: 8px 0 8px 20px; }
         
         /* Share bar */
-        .share-bar { display: flex; gap: 6px; justify-content: center; margin: 8px 0 2px; flex-wrap: wrap; flex-shrink: 0; }
+        .share-bar { display: flex; gap: 6px; justify-content: center; margin: 8px 0 2px; flex-wrap: wrap;  }
         .share-btn-s {
             display: flex; align-items: center; gap: 5px; padding: 6px 12px;
             border-radius: 6px; border: 1px solid #2a2a2a; background: #111;
@@ -71,7 +70,7 @@
             transition: all 0.2s; text-decoration: none;
         }
         .share-btn-s:hover { border-color: #444; color: #fff; }
-        .share-btn-s svg { width: 14px; height: 14px; flex-shrink: 0; }
+        .share-btn-s svg { width: 14px; height: 14px;  }
         .share-btn-s.twitter:hover { border-color: #1d9bf0; color: #1d9bf0; }
         .share-btn-s.kakao:hover { border-color: #fee500; color: #fee500; }
         .share-btn-s.telegram:hover { border-color: #26a5e4; color: #26a5e4; }
@@ -89,7 +88,7 @@
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
         /* Period buttons */
-        .period-row { display: flex; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
+        .period-row { display: flex; justify-content: center; margin-bottom: 10px;  }
         .period-buttons {
             display: flex;
             gap: 8px;
@@ -116,16 +115,15 @@
             display: grid;
             grid-template-columns: 1fr 300px;
             gap: 12px;
-            flex: 1;
-            min-height: 0;
             padding: 0 16px;
+            height: 380px;
         }
         
         .chart-container {
             background: #111;
             border-radius: 12px;
             padding: 14px;
-            min-height: 0;
+            height: 100%;
             position: relative;
         }
         
@@ -133,8 +131,8 @@
             background: #111;
             border-radius: 12px;
             padding: 12px;
+            height: 100%;
             overflow-y: auto;
-            min-height: 0;
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
@@ -172,7 +170,7 @@
         .legend {
             display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 16px;
             padding: 10px 12px; background: #111; border-radius: 12px;
-            flex-shrink: 0; justify-content: center;
+             justify-content: center;
         }
         .legend-item {
             display: flex; align-items: center; gap: 5px;
@@ -184,7 +182,7 @@
 
         .footer {
             padding: 6px 16px 12px; text-align: center; font-size: 9px;
-            color: #555; flex-shrink: 0;
+            color: #555; 
         }
 
         /* Watermark */
@@ -195,21 +193,22 @@
         }
 
         @media (max-width: 1024px) {
-            .main-content { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-            .stats-box { max-height: 180px; }
+            .main-content { grid-template-columns: 1fr; height: auto; }
+            .chart-container { height: 320px; }
+            .stats-box { height: auto; max-height: 200px; }
         }
         @media (max-width: 600px) {
-            .header { padding: 10px 10px 6px; }
+            .header { padding: 6px 10px 2px; }
             .title { font-size: 16px; }
-            .chart-container { padding: 8px 4px 8px 8px; border-radius: 10px; }
-            .stats-box { max-height: 130px; padding: 10px; border-radius: 10px; }
+            .main-content { padding: 0 10px; gap: 8px; }
+            .chart-container { height: 260px; padding: 8px 4px 8px 8px; border-radius: 10px; }
+            .stats-box { max-height: 120px; padding: 10px; border-radius: 10px; }
             .period-btn { padding: 6px 10px; font-size: 11px; }
             .share-btn-s { padding: 4px 8px; font-size: 9px; }
             .share-btn-s .label-text { display: none; }
             .legend { gap: 6px; padding: 8px 10px; margin: 6px 10px; border-radius: 8px; }
             .legend-label { font-size: 9px; }
             .legend-dot { width: 6px; height: 6px; }
-            .main-content { gap: 8px; padding: 0 10px; }
             .footer { padding: 4px 10px 8px; font-size: 8px; }
         }
     </style>
