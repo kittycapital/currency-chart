@@ -112,14 +112,14 @@
             background: #111;
             border-radius: 12px;
             padding: 20px;
-            height: 500px;
+            height: 300px;
         }
         
         .stats-box {
             background: #111;
             border-radius: 12px;
             padding: 16px;
-            max-height: 500px;
+            max-height: 300px;
             overflow-y: auto;
         }
         .stats-title {
@@ -171,8 +171,8 @@
         /* Watermark */
         .watermark {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.04);
-            pointer-events: none; white-space: nowrap; letter-spacing: 4px;
+            font-size: 32px; font-weight: 700; color: rgba(255,255,255,0.04);
+            pointer-events: none; white-space: nowrap; letter-spacing: 6px;
         }
         .chart-container { position: relative; }
 
@@ -182,7 +182,7 @@
         @media (max-width: 600px) {
             body { padding: 12px; }
             .title { font-size: 18px; }
-            .chart-container { height: 350px; }
+            .chart-container { height: 240px; }
             .period-btn { padding: 6px 12px; font-size: 12px; }
             .share-btn-s { padding: 5px 8px; font-size: 10px; }
             .share-btn-s .label-text { display: none; }
@@ -237,7 +237,7 @@
         
         <div class="main-content">
             <div class="chart-container">
-                <div class="watermark">herdvibe.com</div>
+                <div class="watermark">Herdvibe.com</div>
                 <canvas id="perfChart"></canvas>
             </div>
             
